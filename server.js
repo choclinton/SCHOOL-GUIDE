@@ -1,22 +1,27 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-
-// Use the PORT environment variable provided by Render, fallback to 3000
 const PORT = process.env.PORT || 3000;
 
-// Serve all static files from the dist folder (built React app)
-app.use(express.static(path.join(__dirname, 'dist')));
+const distPath = path.join(__dirname, 'dist');
+const indexPath = path.join(distPath, 'index.html');
 
-// For any route not found in dist (React Router routes like /dashboard, /blueprint/:id etc.)
-// send back index.html so React Router can handle client-side navigation
+// Serve static files from dist
+app.use(express.static(distPath));
+
+// Fallback all SPA routes to index.html
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send('Build files missing. Ensure "Build Command" on Render is set to: npm install && npm run build');
+  }
 });
 
 app.listen(PORT, () => {
